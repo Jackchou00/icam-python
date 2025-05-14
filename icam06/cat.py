@@ -69,7 +69,6 @@ def calc_D_fixed(XYZ_w, surround):
     L_A = 0.2 * XYZ_w[..., 1]  # 20% of the adaptation white
     D = F * (1 - (1 / 3.6) * np.exp(-(L_A + 42) / 92))
     # 0.3 is not applied.
-    # should be (L_A + 42) in correct CAT02
     return D
 
 

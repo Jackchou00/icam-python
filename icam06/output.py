@@ -29,11 +29,11 @@ def XYZ_to_sRGB(XYZ):
     RGB_reshaped = np.dot(XYZ_reshaped, M.T)
     RGB = RGB_reshaped.reshape(XYZ.shape)
 
+    # Clip values to [0, 1] range
+    RGB = np.clip(RGB, 0, 1)
     # Apply the sRGB EOTF inverse
     RGB = np.where(RGB <= 0.0031308, 12.92 * RGB, 1.055 * (RGB ** (1 / 2.4)) - 0.055)
 
-    # Clip values to [0, 1] range
-    RGB = np.clip(RGB, 0, 1)
     return RGB
 
 
