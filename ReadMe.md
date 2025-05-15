@@ -14,6 +14,8 @@ By using a forward Colour Appearance Model, the Colour Appearance of each pixel 
 
 iCAM06 is a Colour Appearance Model proposed by Jiangtao Kuang et al. for rendering HDR images. It incorporates many theories and algorithms from Colour Appearance Models, achieving a relatively scientific image processing approach from scenes with a large luminance range to Displays.
 
+![original_image.jpg](https://img.jackchou00.icu/jack-img/2025/05/10092677bb30eb7b9c2394dd9f601f4a.avif)
+
 ## Starting Point: Input
 
 A typical Colour Appearance Model accepts tristimulus values and Viewing Conditions as input.
@@ -46,6 +48,8 @@ The image above illustrates using a linear combination to predict tristimulus va
 
 Additionally, a coefficient is needed for scaling to convert to tristimulus values representing Absolute Luminance. This coefficient can be calculated from the camera's Aperture, Shutter Speed, and ISO. These parameters used to control the amount of light entering do not affect the linearity or relative relationships of the light.
 
+Another scenario involves using High Dynamic Range Images as input, such as HDR images encoded with the PQ Transfer Function. First, the non-linearly encoded RGB pixel values are decoded using the EOTF to obtain linear RGB pixel values. Then, the linear RGB pixel values are converted to the XYZ space to obtain the tristimulus values. Several of the .tif files and `image_input.py` provided in the project utilize this type of input.
+
 ## Image Decomposition
 
 According to the visual system's different perception of colour and detail, the image is decomposed into a Base Layer and a Details Layer. Operations on colour, such as Chromatic Adaptation and Tone Compression, are only applied to the Base Layer. The Details Layer, after enhancement or adjustment, is merged with the adjusted Base Layer.
@@ -57,6 +61,8 @@ Therefore, Bilateral Filtering can effectively smooth the image while preserving
 The Details Layer is obtained by subtracting the Base Layer from the original image. Both layers need to be converted back to linear space.
 
 The Bilateral Filtering used in iCAM06 is accelerated through piecewise linear approximation and nearest-neighbor downsampling.
+
+![detail_layer.jpg](https://img.jackchou00.icu/jack-img/2025/05/bdb413bcbef2e15d50fb1c09a835c976.avif)
 
 ## Chromatic Adaptation
 
@@ -85,6 +91,10 @@ $$
 
 In the original equation, the sign of 42 in the exponent of $e$ in the calculation of adaptation degree D is incorrect.
 
+![white_adaptation.jpg](https://img.jackchou00.icu/jack-img/2025/05/bac872be91ec0d5ac78fddbf998fe66b.avif)
+
+![XYZ_adapted.jpg](https://img.jackchou00.icu/jack-img/2025/05/a503e3e840f310c2c7bedc670f0a52cd.avif)
+
 ## Tone Compression
 
 The human eye's perception of luminance is not linear, but highly non-linear. By applying Tone Compression according to this non-linear characteristic, it is possible to reproduce Colour Appearance with a larger luminance range within a limited Display luminance range.
@@ -100,6 +110,8 @@ $$
 The reference white $Y_{W}$ used in this step is also a Gaussian blur of the Base Layer, but with a greater degree of blur than in Chromatic Adaptation.
 
 This step completes the compression of luminance. The original large luminance range, after passing through this Sigmoid function, has a range of 0.1 to 400, although it rarely exceeds 200. Before this step, the relationship was linear with the scene light; after this step, it is linear with the Display light. Therefore, this step can also be understood as an Optic-Opto Transfer Function (OOTF).
+
+![XYZ_tone_compressed.jpg](https://img.jackchou00.icu/jack-img/2025/05/aef5ee01b70874562aa5a36f2bf49add.avif)
 
 ## Merging Image and Output
 
@@ -125,3 +137,38 @@ The method for enhancing Chroma is to stretch the two colour directions. The deg
 $$
 P = P \cdot \left[ (F_L + 1)^{0.2} \left( \frac{1.29C^2 - 0.27C + 0.42}{C^2 - 0.31C + 0.42} \right) \right]
 $$
+
+![output.jpg](https://img.jackchou00.icu/jack-img/2025/05/6910b5899e4e8fe07ba2a92743d54ccf.avif)
+
+## Results and Analysis
+
+This algorithm addresses two problems:
+
+1. How to reproduce real-world scenes on a display.
+2. How to reproduce high dynamic range images on traditional low dynamic range displays.
+
+Unlike computer vision, colour science focuses more on human visual perception, aiming to process images from a visual perspective. iCAM06, through methods such as Chromatic Adaptation, Tone Compression, and uniform colour spaces, provides an interpretable solution for image processing from high dynamic range to low dynamic range.
+
+However, iCAM06 also has some shortcomings:
+
+1. The Chromatic Adaptation algorithm has issues, and the effect after correction is not ideal, possibly due to the limitations of the Chromatic Adaptation model and the influence of the Grey World hypothesis.
+2. The Sigmoid function used for Tone Compression reduces image contrast too much and cannot balance the effects for both low dynamic range and high dynamic range inputs.
+3. Edge-preserving transformation and detail enhancement may introduce artifacts and excessive sharpening.
+4. Processing in a uniform colour space lacks reliable theoretical basis, especially the practice of applying a gamma exponent to Lightness.
+
+Overall, iCAM06, leveraging research from colour science, proposes an effective method for high dynamic range image processing and is a successful exploration of integrating colour science into image processing.
+
+
+## References
+
+[1] M. D. Fairchild and G. M. Johnson, "Meet iCAM: A next-generation color appearance model," *Proc. 10th Color Imaging Conf.*, vol. 10, no. 1, pp. 33–38, Jan. 2002.
+
+[2] J. Kuang, G. M. Johnson, and M. D. Fairchild, "iCAM06: A refined image appearance model for HDR image rendering," *J. Visual Communication and Image Representation*, vol. 18, no. 5, pp. 406–414, Oct. 2007.
+
+[3] F. Durand and J. Dorsey, "Fast bilateral filtering for the display of high-dynamic-range images," in *Proc. 29th Annual Conf. Computer Graphics and Interactive Techniques (SIGGRAPH)*, San Antonio, TX, USA, Jul. 2002, pp. 257–266.
+
+[4] P. Hung and R. S. Berns, "Determination of constant hue loci for a CRT gamut and their predictions using color appearance spaces," *Color Research & Application*, vol. 20, no. 5, pp. 285–295, Oct. 1995.
+
+[5] M. R. Luo and C. Li, "CIECAM02 and its recent developments," in *Advanced Color Image Processing and Analysis*, C. Fernandez-Maloigne, Ed., New York, NY, USA: Springer, 2013, pp. 19–58.
+
+[6] M. D. Fairchild, "A revision of CIECAM97s for practical applications," *Color Research & Application*, vol. 26, no. 6, pp. 418–427, 2001.

@@ -13,7 +13,7 @@ def main():
     print("Step 1: Reading input image...")
     # Input of the iCAM06 model: XYZ, absolute color space
     # XYZ = np.load("example/xyz.npy").astype(np.float32)
-    file_name = "test_4.tif"
+    file_name = "test_0.tif"
     XYZ = read_img(file_name).astype(np.float32)
 
     # save a original image as comparison
