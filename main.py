@@ -1,63 +1,89 @@
 import numpy as np
-from spatial_process.fastbiliateral_blur import bilateral_filter, blur
-
-
-from chromatic_adaptation import img_modified_CAT02_to_D65, img_CAT02_to_D65
-from colour_space_conversion import XYZ_to_IPT, IPT_to_XYZ, XYZ_to_P3_RGB
-from tone_compression.TC import img_TC
-from colour_space_conversion.IPT_adjust import IPT_adjust
-from PIL import Image
-
-
-def LocalContrast(detail, base):
-    La = 0.2 * base[:, :, 1]
-    k = 1.0 / (5 * La + 1)
-    FL = 0.2 * k**4 * (5 * La) + 0.1 * (1 - k**4) ** 2 * (5 * La) ** (1 / 3)
-    FL_rep = np.stack([FL, FL, FL], axis=2)
-    detail_a = detail ** ((FL_rep + 0.8) ** 0.25)
-    return detail_a
+import icam06
+from image_input import read_img
+import os
 
 
 def main():
-    output_path = "example/output_no_detailed_P3.jpg"
-    DETAIL = False
+    output_folder = "example"
 
+    # Create output folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
+
+    print("Step 1: Reading input image...")
     # Input of the iCAM06 model: XYZ, absolute color space
-    XYZ = np.load("example/xyz.npy").astype(np.float32)
+    # XYZ = np.load("example/xyz.npy").astype(np.float32)
+    file_name = "test_0.tif"
+    XYZ = read_img(file_name).astype(np.float32)
+
+    # save a original image as comparison
+    # original image: normalized by max Y value, linear output.
+    print("Step 2: Saving original image...")
+    icam06.save_image(
+        XYZ * 100 / np.max(XYZ[..., 1]), f"{output_folder}/original_image.jpg"
+    )
 
     # Image decomposition
-    if DETAIL:
-        base_layer, detail_layer = bilateral_filter(XYZ)
-    else:
-        base_layer = XYZ
+    print("Step 3: Performing image decomposition (bilateral filtering)...")
+    base_layer, detail_layer = icam06.bilateral_filter(XYZ)
+    icam06.save_image(
+        base_layer * 100 / np.max(base_layer[..., 1]), f"{output_folder}/base_layer.jpg"
+    )
+    icam06.save_image(
+        detail_layer * 100 / np.max(detail_layer[..., 1]),
+        f"{output_folder}/detail_layer.jpg",
+    )
 
     # Chromatic adaptation
-    white = blur(XYZ, 2)
-    XYZ_adapt = img_CAT02_to_D65(base_layer, white, surround="average")
+    print("Step 4: Calculating white point for chromatic adaptation...")
+    white = icam06.blur(XYZ, 2)
+    icam06.save_image(
+        white * 100 / np.max(white[..., 1]), f"{output_folder}/white_adaptation.jpg"
+    )
+
+    # here we offer two options for chromatic adaptation:
+    # 1. CAT02 chromatic adaptation with fixed calculation of D and corresponding color.
+    # 2. original one in paper, which may lead to numerical issue.
+    print("Step 5: Performing chromatic adaptation...")
+    # XYZ_adapt = icam06.CAT02_to_D65_fixed(base_layer, white, surround="average")
+    XYZ_adapt = icam06.CAT02_to_D65(base_layer, white, surround="average")
+    icam06.save_image(
+        XYZ_adapt * 100 / np.max(XYZ_adapt[..., 1]), f"{output_folder}/XYZ_adapted.jpg"
+    )
 
     # Tone compression
-    white = blur(XYZ, 3)
-    XYZ_tc = img_TC(XYZ_adapt, white, 0.7)
+    print("Step 6: Calculating white point for tone compression...")
+    white = icam06.blur(XYZ, 3)
+    icam06.save_image(
+        white * 100 / np.max(white[..., 1]), f"{output_folder}/white_compression.jpg"
+    )
+
+    print("Step 7: Performing tone compression...")
+    XYZ_tc = icam06.tone_compression(XYZ_adapt, white, p=0.75)
+    icam06.save_image(
+        XYZ_tc * 100 / np.max(XYZ_tc[..., 1]),
+        f"{output_folder}/XYZ_tone_compressed.jpg",
+    )
+
+    # Combine base and detail layers
+    print("Step 8: Combining base and detail layers...")
+    XYZ_d = icam06.combine(XYZ_tc, detail_layer)
+    icam06.save_image(
+        XYZ_d * 100 / np.max(XYZ_d[..., 1]), f"{output_folder}/XYZ_combined.jpg"
+    )
 
     # Image attribute adjustments
-    if DETAIL:
-        XYZ_d = XYZ_tc * LocalContrast(detail_layer, base_layer)
-    else:
-        XYZ_d = XYZ_tc
-    IPT = XYZ_to_IPT(XYZ_d)
-    IPT_adjusted = IPT_adjust(IPT, XYZ_d)
-    XYZ_p = IPT_to_XYZ(IPT_adjusted)
+    print("Step 9: Performing IPT adjustments...")
+    XYZ_p = icam06.IPT_adjust(XYZ_d, surround="average")
+    icam06.save_image(
+        XYZ_p * 100 / np.max(XYZ_p[..., 1]), f"{output_folder}/XYZ_IPT_adjusted.jpg"
+    )
 
-    # Convert XYZ to Display P3 RGB
-    RGB_p = XYZ_to_P3_RGB(XYZ_p)
-    RGB_p_uint8 = (RGB_p * 255).clip(0, 255).astype(np.uint8)
-
-    # Create PIL Image and save
-    img = Image.fromarray(RGB_p_uint8)
-    with open("ICC/Display P3.icc", "rb") as icc_file:
-        icc_profile = icc_file.read()
-    img.save(output_path, icc_profile=icc_profile)
-    print(f"Image saved as {output_path} with ICC profile.")
+    # Output image
+    print("Step 10: Saving final output image...")
+    output_file = f"{output_folder}/output.jpg"
+    icam06.save_image(XYZ_p, output_file)
+    print(f"Processing complete. All results saved to '{output_folder}' folder.")
 
 
 if __name__ == "__main__":
