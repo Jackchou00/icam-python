@@ -10,7 +10,7 @@ iCAM 是 Fairchild 等人提出的一种框架，将色貌模型应用于图像�
 
 这个项目是 iCAM 的 Python 实现，参考了 iCAM06 的原始代码（MATLAB）。
 
-详细的研究和模型细节请参阅：[iCAM06 调研笔记](https://jackchou00.com/posts/icam06-survey/)
+详细的研究和模型细节请参阅：[iCAM06 笔记](https://jackchou00.com/posts/icam06-survey/)
 
 
 ## 参考文献
