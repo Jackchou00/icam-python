@@ -36,9 +36,20 @@ iCAM 的输出图像与输入图像具有相同的尺寸。但输出的 XYZ 值�
 
 目前，正在改进项目整体的文件结构，以实现模块化和更好的可读性。
 
-已按照 iCAM 的结构，将仓库分为以下部分：
+## 项目结构
 
-- `chromatic_adaptation`：色适应
-- `colour_space_conversion`：色彩空间转换
-- `spatial_process`：空域处理
-- `tone_compression`：色调压缩
+```text
+icam-python/
+├── icam06/                 # 主要集成包
+│   ├── cat.py              # 色适应模型 (CAT02, CAT16)
+│   ├── rgb_xyz.py          # 通用色彩空间转换
+│   ├── tc.py               # 色调压缩
+│   └── ...
+├── chromatic_adaptation/     # 遗留模块 (保持向后兼容)
+├── colour_space_conversion/  # 遗留模块
+├── research/               # 研究笔记与调研报告
+├── example/                # 示例数据与输出结果
+├── main.py                 # 主要运行脚本
+└── pyproject.toml          # uv 环境配置文件
+```
+

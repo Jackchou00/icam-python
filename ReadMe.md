@@ -38,7 +38,20 @@ The project is currently undergoing structural improvements to enhance modulariz
 
 I have divided the repository into the following sections, following the structure of iCAM:
 
-- `chromatic_adaptation`: Chromatic adaptation transforms
-- `colour_space_conversion`: Color space conversions (e.g., from XYZ to sRGB)
-- `spatial_process`: Spatial processing operations
-- `tone_compression`: Tone compression algorithms
+## Repository Structure
+
+```text
+icam-python/
+├── icam06/                 # Primary integrated package
+│   ├── cat.py              # Chromatic adaptation models
+│   ├── rgb_xyz.py          # Universal RGB/XYZ conversion
+│   ├── tc.py               # Tone compression
+│   └── ...
+├── chromatic_adaptation/     # Legacy modules (backward compatibility)
+├── colour_space_conversion/  # Legacy modules
+├── research/               # Research notes and survey
+├── example/                # Data files and output
+├── main.py                 # Main demonstration script
+└── pyproject.toml          # uv configuration
+```
+
