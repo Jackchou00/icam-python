@@ -13,6 +13,17 @@ M_CAT02_inv = np.linalg.inv(M_CAT02)
 XYZ_wr = np.array([95.05, 100.0, 108.88])
 LMS_wr = M_CAT02 @ XYZ_wr
 
+M_CAT16 = np.array(
+    [
+        [0.401288, 0.650173, -0.051461],
+        [-0.250268, 1.204414, 0.045854],
+        [-0.002079, 0.048952, 0.953127],
+    ]
+)
+M_CAT16_inv = np.linalg.inv(M_CAT16)
+LMS_wr_16 = M_CAT16 @ XYZ_wr
+
+
 
 def get_F(surround):
     surround_dict = {"average": 1.0, "dim": 0.9, "dark": 0.8}
@@ -104,3 +115,33 @@ def CAT02_to_D65_fixed(XYZ, XYZ_w, surround="average"):
     XYZ_c = XYZ_c.reshape(XYZ.shape)
 
     return XYZ_c
+
+
+def CAT16_to_D65(XYZ, XYZ_w, surround="average"):
+    # XYZ input: shape (h, w, 3)
+    # XYZ_w: shape (h, w, 3), adaptation white point
+
+    # convert XYZ to LMS
+    XYZ_reshape = XYZ.reshape((-1, 3))
+    LMS_reshape = XYZ_reshape @ M_CAT16.T
+    LMS = LMS_reshape.reshape(XYZ.shape)
+
+    # convert XYZ_w to LMS_w
+    XYZ_w_reshape = XYZ_w.reshape((-1, 3))
+    LMS_w_reshape = XYZ_w_reshape @ M_CAT16.T
+    LMS_w = LMS_w_reshape.reshape(XYZ_w.shape)
+
+    LMS_c = np.zeros_like(LMS)
+    D = calc_D_fixed(XYZ_w, surround)
+    Yw_Ywr = XYZ_w[..., 1] / XYZ_wr[1]
+
+    for i in range(3):
+        LMS_c[..., i] = (D * Yw_Ywr * LMS_wr_16[i] / LMS_w[..., i] + 1 - D) * LMS[..., i]
+
+    # convert LMS_c to XYZ_c
+    LMS_c_reshape = LMS_c.reshape((-1, 3))
+    XYZ_c = LMS_c_reshape @ M_CAT16_inv.T
+    XYZ_c = XYZ_c.reshape(XYZ.shape)
+
+    return XYZ_c
+

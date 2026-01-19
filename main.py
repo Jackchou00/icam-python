@@ -12,9 +12,12 @@ def main():
 
     print("Step 1: Reading input image...")
     # Input of the iCAM06 model: XYZ, absolute color space
-    # XYZ = np.load("example/xyz.npy").astype(np.float32)
     file_name = "test_0.tif"
-    XYZ = read_img(file_name).astype(np.float32)
+    if os.path.exists(file_name):
+        XYZ = read_img(file_name).astype(np.float32)
+    else:
+        print(f"Warning: {file_name} not found, falling back to example/xyz.npy")
+        XYZ = np.load("example/xyz.npy").astype(np.float32)
 
     # save a original image as comparison
     # original image: normalized by max Y value, linear output.

@@ -5,6 +5,7 @@ description = "iCAM06 implementation in Python for image processing and chromati
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "colour-science>=0.4.7",
     "matplotlib>=3.10.8",
     "numexpr>=2.14.1",
     "numpy>=2.4.1",
